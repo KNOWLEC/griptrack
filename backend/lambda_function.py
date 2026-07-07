@@ -27,6 +27,12 @@ def _response(status: int, payload: dict) -> dict:
 
 
 def handler(event, context):
+    # CORS preflight — API Gateway appends the Access-Control-* headers itself,
+    # but the preflight must get a 2xx, not the 401 the secret check would give.
+    method = (event.get("requestContext", {}).get("http", {}) or {}).get("method", "")
+    if method == "OPTIONS":
+        return {"statusCode": 204, "headers": {}, "body": ""}
+
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     secret = os.environ.get("APP_SHARED_SECRET", "")
     if not secret or headers.get("x-app-secret") != secret:
