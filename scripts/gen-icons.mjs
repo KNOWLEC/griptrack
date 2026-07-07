@@ -1,5 +1,6 @@
 // Generates PWA icons from an inline SVG (barbell mark on dark ground).
-// Run: node scripts/gen-icons.mjs
+// sharp is not a project dependency (icons are committed) — to regenerate:
+//   npm i -D sharp && node scripts/gen-icons.mjs && npm uninstall sharp
 import sharp from 'sharp'
 import { mkdirSync } from 'node:fs'
 
