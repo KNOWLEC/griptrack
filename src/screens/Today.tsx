@@ -13,6 +13,7 @@ import {
 import { suggestDayForToday, nextScheduledDay, WEEKDAY_NAMES } from '../lib/dates'
 import { suggestTargets, type Suggestion } from '../lib/progression'
 import type { WorkoutDay } from '../db/types'
+import { BjjLogCard } from '../components/BjjLogCard'
 
 const DIRECTION_BADGE = { up: '↑', hold: '→', down: '↓', none: '' } as const
 
@@ -111,6 +112,8 @@ export function Today() {
       ) : (
         <RestDay programDayInfo={nextScheduledDay(program)} />
       )}
+
+      <BjjLogCard />
 
       {lastReview?.coachingNotes && (
         <div className="coach-note-card">

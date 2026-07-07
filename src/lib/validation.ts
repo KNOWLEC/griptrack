@@ -21,9 +21,36 @@ export const exerciseAdjustmentSchema = z
   })
   .strict()
 
+const coachNewExerciseSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    targetSets: z.number().int().min(1).max(10),
+    repRangeMin: z.number().int().min(1).max(100),
+    repRangeMax: z.number().int().min(1).max(100),
+    targetRpe: z.number().min(5).max(10).optional(),
+    restSeconds: z.number().int().min(15).max(600),
+    targetWeightKg: z.number().positive().optional(),
+    loadIncrementKg: z.number().min(0).max(20),
+    progression: z.enum(['double', 'hold', 'none']),
+    notes: z.string().optional(),
+  })
+  .strict()
+
+export const programChangeSchema = z
+  .object({
+    action: z.enum(['swap', 'add', 'remove']),
+    dayId: z.string(),
+    exerciseId: z.string(),
+    newExercise: coachNewExerciseSchema.optional(),
+    reason: z.string(),
+  })
+  .strict()
+
 export const coachResponseSchema = z.object({
   coachingNotes: z.string(),
   adjustments: z.array(exerciseAdjustmentSchema),
+  programChanges: z.array(programChangeSchema).default([]),
 })
 
 export type CoachResponse = z.infer<typeof coachResponseSchema>
@@ -111,9 +138,21 @@ const coachReviewSchema = z.object({
   adjustments: z
     .array(exerciseAdjustmentSchema.extend({ flagged: z.string().optional() }))
     .optional(),
+  programChanges: z
+    .array(programChangeSchema.extend({ flagged: z.string().optional() }))
+    .optional(),
   appliedRevisionId: z.string().optional(),
   error: z.string().optional(),
   rawResponse: z.string().optional(),
+})
+
+const bjjSessionSchema = z.object({
+  id: z.string(),
+  date: z.string(),
+  loggedAt: z.string(),
+  durationMin: z.number(),
+  intensity: z.number().int().min(1).max(5),
+  notes: z.string().optional(),
 })
 
 const settingsSchema = z.object({
@@ -127,12 +166,13 @@ const settingsSchema = z.object({
 
 export const backupFileSchema = z.object({
   app: z.literal('griptrack'),
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   exportedAt: z.string(),
   programRevisions: z.array(revisionSchema),
   sessions: z.array(sessionSchema),
   coachReviews: z.array(coachReviewSchema),
   settings: z.array(settingsSchema),
+  bjjSessions: z.array(bjjSessionSchema).default([]), // absent in v1 backups
 })
 
 export type BackupFile = z.infer<typeof backupFileSchema>

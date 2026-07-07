@@ -748,6 +748,90 @@ textarea {
   margin: 4px 0 0;
 }
 
+/* ---------- BJJ log ---------- */
+.bjj-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+
+.bjj-card-collapsed {
+  width: 100%;
+  color: var(--text);
+  text-align: left;
+  font-weight: 600;
+}
+
+.bjj-card-saved {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.bjj-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bjj-card-title {
+  font-weight: 600;
+}
+
+.bjj-duration {
+  max-width: 180px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  min-height: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.session-item-bjj {
+  border-left: 3px solid var(--accent);
+}
+
+/* ---------- Coach program changes ---------- */
+.change-action {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 8px;
+  border-radius: 7px;
+}
+
+.change-action-swap {
+  color: var(--amber);
+  background: rgba(245, 183, 78, 0.12);
+}
+
+.change-action-add {
+  color: var(--green);
+  background: rgba(62, 207, 142, 0.12);
+}
+
+.change-action-remove {
+  color: var(--red);
+  background: rgba(245, 103, 103, 0.12);
+}
+
+.change-detail {
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+.change-detail .old {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
 /* ---------- Settings ---------- */
 .toggle-row {
   display: flex;

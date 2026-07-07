@@ -5,6 +5,7 @@ import { db } from '../db/db'
 import { getCurrentRevision, getSettings } from '../db/repo'
 import { applyReview, rejectReview, requestReview, reviewPayloadSummary } from '../lib/coachApi'
 import { AdjustmentDiff } from '../components/AdjustmentDiff'
+import { ProgramChangeCard } from '../components/ProgramChangeCard'
 import { findExercise } from '../db/repo'
 import type { CoachReview as Review } from '../db/types'
 
@@ -12,7 +13,7 @@ export function CoachReview() {
   const settings = useLiveQuery(getSettings)
   const revision = useLiveQuery(getCurrentRevision)
   const reviews = useLiveQuery(() => db.coachReviews.orderBy('requestedAt').reverse().toArray())
-  const [summary, setSummary] = useState<{ sessionCount: number; sinceDate: string }>()
+  const [summary, setSummary] = useState<{ sessionCount: number; bjjCount: number; sinceDate: string }>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
   const [online, setOnline] = useState(navigator.onLine)
@@ -69,8 +70,9 @@ export function CoachReview() {
       </button>
       {summary && (
         <p className="muted small">
-          Will send: last 28 days — {summary.sessionCount} completed session
-          {summary.sessionCount === 1 ? '' : 's'} + current program.
+          Will send: last 28 days — {summary.sessionCount} gym session
+          {summary.sessionCount === 1 ? '' : 's'}, {summary.bjjCount} BJJ session
+          {summary.bjjCount === 1 ? '' : 's'} + current program.
         </p>
       )}
       {error && <p className="error-card">{error}</p>}
@@ -93,33 +95,46 @@ function ActionableReview({ review, program }: { review: Review; program: import
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set((review.adjustments ?? []).map((a, i) => (a.flagged ? -1 : i)).filter((i) => i >= 0)),
   )
+  const [selectedChanges, setSelectedChanges] = useState<Set<number>>(
+    () =>
+      new Set(
+        (review.programChanges ?? []).map((c, i) => (c.flagged ? -1 : i)).filter((i) => i >= 0),
+      ),
+  )
   const [busy, setBusy] = useState(false)
 
-  const toggle = (i: number) =>
-    setSelected((prev) => {
+  const toggleIn = (set: React.Dispatch<React.SetStateAction<Set<number>>>) => (i: number) =>
+    set((prev) => {
       const next = new Set(prev)
       if (next.has(i)) next.delete(i)
       else next.add(i)
       return next
     })
+  const toggle = toggleIn(setSelected)
+  const toggleChange = toggleIn(setSelectedChanges)
+
+  const totalSelected = selected.size + selectedChanges.size
 
   const apply = async () => {
     setBusy(true)
     try {
-      await applyReview(review.id, [...selected])
+      await applyReview(review.id, [...selected], [...selectedChanges])
     } finally {
       setBusy(false)
     }
   }
+
+  const hasProposals =
+    (review.adjustments?.length ?? 0) > 0 || (review.programChanges?.length ?? 0) > 0
 
   return (
     <div className="review-card">
       <h2 className="section-title">Coach's notes</h2>
       <p className="coaching-notes">{review.coachingNotes}</p>
 
-      {(review.adjustments?.length ?? 0) > 0 ? (
+      {(review.adjustments?.length ?? 0) > 0 && (
         <>
-          <h2 className="section-title">Proposed adjustments</h2>
+          <h2 className="section-title">Proposed target adjustments</h2>
           {review.adjustments!.map((adj, i) => (
             <AdjustmentDiff
               key={i}
@@ -129,12 +144,30 @@ function ActionableReview({ review, program }: { review: Review; program: import
               onToggle={() => toggle(i)}
             />
           ))}
-          <button className="btn-primary btn-big" disabled={selected.size === 0 || busy} onClick={apply}>
-            Apply {selected.size} adjustment{selected.size === 1 ? '' : 's'}
-          </button>
         </>
+      )}
+
+      {(review.programChanges?.length ?? 0) > 0 && (
+        <>
+          <h2 className="section-title">Proposed exercise changes</h2>
+          {review.programChanges!.map((change, i) => (
+            <ProgramChangeCard
+              key={i}
+              change={change}
+              program={program}
+              selected={selectedChanges.has(i)}
+              onToggle={() => toggleChange(i)}
+            />
+          ))}
+        </>
+      )}
+
+      {hasProposals ? (
+        <button className="btn-primary btn-big" disabled={totalSelected === 0 || busy} onClick={apply}>
+          Apply {totalSelected} change{totalSelected === 1 ? '' : 's'}
+        </button>
       ) : (
-        <p className="muted">No target changes proposed — keep doing what you're doing.</p>
+        <p className="muted">No changes proposed — keep doing what you're doing.</p>
       )}
       <button className="btn-ghost" onClick={() => void rejectReview(review.id)}>
         Dismiss review

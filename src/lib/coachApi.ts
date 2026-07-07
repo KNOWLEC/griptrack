@@ -1,16 +1,24 @@
 import { db } from '../db/db'
 import {
   appendRevision,
+  bjjSessionsSince,
   completedSessions,
   findExercise,
   getCurrentRevision,
   getSettings,
 } from '../db/repo'
-import type { CoachReview, ExerciseAdjustment, Program } from '../db/types'
+import {
+  BJJ_INTENSITY_LABELS,
+  type CoachReview,
+  type ExerciseAdjustment,
+  type Program,
+  type ProgramChange,
+} from '../db/types'
 import { coachResponseSchema } from './validation'
 import { daysAgoStr } from './dates'
 
 const MAX_WEIGHT_CHANGE = 0.15 // sanity clamp on AI weight adjustments
+const MAX_STRUCTURAL_CHANGES = 3 // flag anything beyond this many swaps/adds/removes
 
 export async function pingBackend(url: string, secret: string): Promise<void> {
   const res = await fetch(url, {
@@ -23,13 +31,14 @@ export async function pingBackend(url: string, secret: string): Promise<void> {
 
 export interface ReviewSummary {
   sessionCount: number
+  bjjCount: number
   sinceDate: string
 }
 
 export async function reviewPayloadSummary(): Promise<ReviewSummary> {
   const since = daysAgoStr(28)
-  const sessions = await completedSessions(since)
-  return { sessionCount: sessions.length, sinceDate: since }
+  const [sessions, bjj] = await Promise.all([completedSessions(since), bjjSessionsSince(since)])
+  return { sessionCount: sessions.length, bjjCount: bjj.length, sinceDate: since }
 }
 
 /** Request a coach review from the backend; stores the CoachReview record. */
@@ -42,7 +51,10 @@ export async function requestReview(): Promise<CoachReview> {
   if (!revision) throw new Error('No program found')
 
   const since = daysAgoStr(28)
-  const sessions = await completedSessions(since)
+  const [sessions, bjjSessions] = await Promise.all([
+    completedSessions(since),
+    bjjSessionsSince(since),
+  ])
 
   const review: CoachReview = {
     id: crypto.randomUUID(),
@@ -77,6 +89,13 @@ export async function requestReview(): Promise<CoachReview> {
             })),
           })),
         })),
+        bjjSessions: bjjSessions.map((s) => ({
+          date: s.date,
+          durationMin: s.durationMin,
+          intensity: s.intensity,
+          intensityLabel: BJJ_INTENSITY_LABELS[s.intensity],
+          notes: s.notes,
+        })),
         context: {
           goal: 'BJJ performance (grip, hips, posterior chain, conditioning) + physique',
           bjjSchedule: 'BJJ Mon/Tue/Wed evenings, sometimes Fri or Sat',
@@ -94,11 +113,16 @@ export async function requestReview(): Promise<CoachReview> {
     if (!parsed.success) throw new Error('Backend returned an unexpected response shape')
 
     const adjustments = sanitizeAdjustments(parsed.data.adjustments, revision.program)
+    const programChanges = sanitizeProgramChanges(
+      parsed.data.programChanges as ProgramChange[],
+      revision.program,
+    )
     const updated: CoachReview = {
       ...review,
       status: 'received',
       coachingNotes: parsed.data.coachingNotes,
       adjustments,
+      programChanges,
       rawResponse: raw,
     }
     await db.coachReviews.put(updated)
@@ -137,33 +161,87 @@ function sanitizeAdjustments(
   return out
 }
 
-/** Apply the selected adjustments as a new program revision. */
+/** Drop structural changes that don't fit the current program; flag excess. */
+function sanitizeProgramChanges(changes: ProgramChange[], program: Program): ProgramChange[] {
+  const out: ProgramChange[] = []
+  for (const change of changes) {
+    const day = program.days.find((d) => d.id === change.dayId)
+    if (!day) continue
+    const existing = day.exercises.find((e) => e.id === change.exerciseId)
+    const sanitized: ProgramChange = { ...change }
+
+    if (change.action === 'remove') {
+      if (!existing) continue
+    } else if (change.action === 'swap') {
+      if (!existing || !change.newExercise) continue
+    } else if (change.action === 'add') {
+      if (!change.newExercise) continue
+      const idTaken = program.days.some((d) =>
+        d.exercises.some((e) => e.id === change.newExercise!.id),
+      )
+      if (idTaken) {
+        sanitized.flagged = 'New exercise id already exists in the program'
+      }
+    }
+
+    if (out.length >= MAX_STRUCTURAL_CHANGES && !sanitized.flagged) {
+      sanitized.flagged = `More than ${MAX_STRUCTURAL_CHANGES} structural changes in one review — apply with care`
+    }
+    out.push(sanitized)
+  }
+  return out
+}
+
+/** Apply the selected adjustments and structural changes as one new revision. */
 export async function applyReview(
   reviewId: string,
-  selectedIndices: number[],
+  selectedAdjustments: number[],
+  selectedChanges: number[] = [],
 ): Promise<void> {
   const review = await db.coachReviews.get(reviewId)
-  if (!review || !review.adjustments) throw new Error('Review not found')
+  if (!review) throw new Error('Review not found')
   const revision = await getCurrentRevision()
   if (!revision) throw new Error('No program found')
 
   const program = structuredClone(revision.program)
   let applied = 0
-  for (const i of selectedIndices) {
-    const adj = review.adjustments[i]
+
+  for (const i of selectedAdjustments) {
+    const adj = review.adjustments?.[i]
     if (!adj) continue
     const exercise = findExercise(program, adj.dayId, adj.exerciseId)
     if (!exercise) continue
     Object.assign(exercise, adj.changes)
     applied++
   }
-  if (applied === 0) throw new Error('No applicable adjustments selected')
+
+  for (const i of selectedChanges) {
+    const change = review.programChanges?.[i]
+    if (!change) continue
+    const day = program.days.find((d) => d.id === change.dayId)
+    if (!day) continue
+    const idx = day.exercises.findIndex((e) => e.id === change.exerciseId)
+    if (change.action === 'remove') {
+      if (idx < 0) continue
+      day.exercises.splice(idx, 1)
+    } else if (change.action === 'swap') {
+      if (idx < 0 || !change.newExercise) continue
+      day.exercises.splice(idx, 1, structuredClone(change.newExercise))
+    } else if (change.action === 'add') {
+      if (!change.newExercise) continue
+      if (day.exercises.some((e) => e.id === change.newExercise!.id)) continue
+      day.exercises.push(structuredClone(change.newExercise))
+    }
+    applied++
+  }
+
+  if (applied === 0) throw new Error('No applicable changes selected')
 
   const newRev = await appendRevision(
     program,
     'coach-review',
     review.id,
-    `Coach review: ${applied} adjustment${applied === 1 ? '' : 's'} applied`,
+    `Coach review: ${applied} change${applied === 1 ? '' : 's'} applied`,
   )
   await db.coachReviews.update(reviewId, {
     status: 'applied',

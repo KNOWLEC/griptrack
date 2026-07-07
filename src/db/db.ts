@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { AppSettings, CoachReview, ProgramRevision, SessionLog } from './types'
+import type { AppSettings, BjjSession, CoachReview, ProgramRevision, SessionLog } from './types'
 import { DEFAULT_SETTINGS } from './types'
 import { SEED_PROGRAM } from './seedProgram'
 
@@ -8,6 +8,7 @@ export const db = new Dexie('griptrack') as Dexie & {
   sessions: EntityTable<SessionLog, 'id'>
   coachReviews: EntityTable<CoachReview, 'id'>
   settings: EntityTable<AppSettings, 'id'>
+  bjjSessions: EntityTable<BjjSession, 'id'>
 }
 
 db.version(1).stores({
@@ -15,6 +16,10 @@ db.version(1).stores({
   sessions: 'id, date, dayId, status, startedAt',
   coachReviews: 'id, requestedAt, status',
   settings: 'id',
+})
+
+db.version(2).stores({
+  bjjSessions: 'id, date, loggedAt',
 })
 
 // First-launch seeding: revision 1 from the built-in program, default settings.

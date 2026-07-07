@@ -11,6 +11,9 @@ import os
 import pathlib
 import sys
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
+
 os.environ.setdefault("APP_SHARED_SECRET", "test-secret")
 
 from lambda_function import handler  # noqa: E402
@@ -53,11 +56,17 @@ def main() -> int:
         print(body)
         return 1
     assert "coachingNotes" in body and "adjustments" in body, body
+    assert "programChanges" in body, body
     print("\n--- Coaching notes ---")
     print(body["coachingNotes"])
     print(f"\n--- {len(body['adjustments'])} adjustment(s) ---")
     for adj in body["adjustments"]:
         print(f"  {adj['dayId']} / {adj['exerciseId']}: {adj['changes']} — {adj['reason']}")
+    print(f"\n--- {len(body['programChanges'])} program change(s) ---")
+    for change in body["programChanges"]:
+        new = change.get("newExercise", {}).get("name", "")
+        print(f"  {change['action']} {change['dayId']}/{change['exerciseId']}"
+              f"{' -> ' + new if new else ''} — {change['reason']}")
     print("\nAll local checks passed")
     return 0
 

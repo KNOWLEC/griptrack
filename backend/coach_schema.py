@@ -37,6 +37,62 @@ COACH_SCHEMA = {
             },
         },
     },
-    "required": ["coachingNotes", "adjustments"],
+    "required": ["coachingNotes", "adjustments", "programChanges"],
     "additionalProperties": False,
+}
+
+_NEW_EXERCISE_SCHEMA = {
+    "type": "object",
+    "description": "Full spec for a new or replacement exercise.",
+    "properties": {
+        "id": {"type": "string", "description": "New unique kebab-case slug, e.g. 'front-squat'"},
+        "name": {"type": "string"},
+        "targetSets": {"type": "integer"},
+        "repRangeMin": {"type": "integer"},
+        "repRangeMax": {"type": "integer"},
+        "targetRpe": {"type": "number"},
+        "restSeconds": {"type": "integer"},
+        "targetWeightKg": {"type": "number"},
+        "loadIncrementKg": {"type": "number"},
+        "progression": {"type": "string", "enum": ["double", "hold", "none"]},
+        "notes": {"type": "string", "description": "Cues + why it matters for BJJ"},
+    },
+    "required": [
+        "id",
+        "name",
+        "targetSets",
+        "repRangeMin",
+        "repRangeMax",
+        "restSeconds",
+        "loadIncrementKg",
+        "progression",
+    ],
+    "additionalProperties": False,
+}
+
+COACH_SCHEMA["properties"]["programChanges"] = {
+    "type": "array",
+    "description": (
+        "Structural changes: swap a stalling/problematic exercise, add or remove one. "
+        "Use sparingly — at most 2-3 per review, only when the logs justify it. "
+        "Empty array when the structure is fine."
+    ),
+    "items": {
+        "type": "object",
+        "properties": {
+            "action": {"type": "string", "enum": ["swap", "add", "remove"]},
+            "dayId": {"type": "string"},
+            "exerciseId": {
+                "type": "string",
+                "description": (
+                    "For swap/remove: the id of the existing exercise. "
+                    "For add: repeat the new exercise's id."
+                ),
+            },
+            "newExercise": _NEW_EXERCISE_SCHEMA,
+            "reason": {"type": "string"},
+        },
+        "required": ["action", "dayId", "exerciseId", "reason"],
+        "additionalProperties": False,
+    },
 }

@@ -78,6 +78,27 @@ export interface SessionLog {
   bjjFatigue?: BjjFatigue // 1 fresh - 5 wrecked
 }
 
+// ---------- BJJ session log ----------
+
+export type BjjIntensity = 1 | 2 | 3 | 4 | 5 // 1 drilling … 5 competition prep
+
+export interface BjjSession {
+  id: string
+  date: string // YYYY-MM-DD (the evening of the session)
+  loggedAt: string
+  durationMin: number
+  intensity: BjjIntensity
+  notes?: string
+}
+
+export const BJJ_INTENSITY_LABELS: Record<BjjIntensity, string> = {
+  1: 'Drilling',
+  2: 'Light',
+  3: 'Moderate',
+  4: 'Hard rounds',
+  5: 'Comp prep',
+}
+
 export interface AdjustmentChanges {
   targetWeightKg?: number
   targetSets?: number
@@ -94,6 +115,17 @@ export interface ExerciseAdjustment {
   flagged?: string // set client-side when a sanity check tripped
 }
 
+export type ProgramChangeAction = 'swap' | 'add' | 'remove'
+
+export interface ProgramChange {
+  action: ProgramChangeAction
+  dayId: string
+  exerciseId: string // existing exercise for swap/remove; equals newExercise.id for add
+  newExercise?: Exercise // required for swap/add
+  reason: string
+  flagged?: string // set client-side when a sanity check tripped
+}
+
 export type ReviewStatus = 'pending' | 'received' | 'applied' | 'rejected' | 'error'
 
 export interface CoachReview {
@@ -103,6 +135,7 @@ export interface CoachReview {
   status: ReviewStatus
   coachingNotes?: string
   adjustments?: ExerciseAdjustment[]
+  programChanges?: ProgramChange[]
   appliedRevisionId?: string
   error?: string
   rawResponse?: string

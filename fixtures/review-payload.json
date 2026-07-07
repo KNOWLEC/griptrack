@@ -74,6 +74,13 @@
       ]
     }
   ],
+  "bjjSessions": [
+    { "date": "2026-06-15", "durationMin": 90, "intensity": 3, "intensityLabel": "Moderate", "notes": "Guard passing drills, light rolls" },
+    { "date": "2026-06-16", "durationMin": 90, "intensity": 4, "intensityLabel": "Hard rounds", "notes": "Comp team visiting, hard rounds" },
+    { "date": "2026-06-17", "durationMin": 60, "intensity": 2, "intensityLabel": "Light" },
+    { "date": "2026-06-21", "durationMin": 120, "intensity": 5, "intensityLabel": "Comp prep", "notes": "Long comp prep, gassed by the end, knee a bit sore" },
+    { "date": "2026-06-22", "durationMin": 90, "intensity": 4, "intensityLabel": "Hard rounds" }
+  ],
   "context": {
     "goal": "BJJ performance (grip, hips, posterior chain, conditioning) + physique",
     "bjjSchedule": "BJJ Mon/Tue/Wed evenings, sometimes Fri or Sat",

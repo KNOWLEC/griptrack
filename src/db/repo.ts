@@ -2,6 +2,7 @@ import { db } from './db'
 import type {
   AppSettings,
   BjjFatigue,
+  BjjSession,
   Exercise,
   ExerciseLog,
   Program,
@@ -173,6 +174,44 @@ export async function recentMeanFatigue(n = 3): Promise<number | undefined> {
   const rated = sessions.filter((s) => s.bjjFatigue !== undefined).slice(-n)
   if (rated.length === 0) return undefined
   return rated.reduce((sum, s) => sum + (s.bjjFatigue ?? 0), 0) / rated.length
+}
+
+// ---------- BJJ sessions ----------
+
+export async function logBjjSession(
+  entry: Omit<BjjSession, 'id' | 'loggedAt'>,
+): Promise<BjjSession> {
+  const session: BjjSession = {
+    ...entry,
+    id: crypto.randomUUID(),
+    loggedAt: new Date().toISOString(),
+  }
+  await db.bjjSessions.add(session)
+  return session
+}
+
+export async function deleteBjjSession(id: string): Promise<void> {
+  await db.bjjSessions.delete(id)
+}
+
+export async function bjjSessionsSince(sinceDate: string): Promise<BjjSession[]> {
+  return db.bjjSessions.where('date').aboveOrEqual(sinceDate).sortBy('date')
+}
+
+/** BJJ-hinted weekdays: Mon/Tue/Wed + Fri/Sat. */
+export const BJJ_WEEKDAYS = [1, 2, 3, 5, 6]
+
+/**
+ * The date the quick-log card should prompt for: yesterday if it was a BJJ
+ * night with nothing logged, else undefined (manual logging stays available).
+ */
+export async function suggestedBjjLogDate(now = new Date()): Promise<string | undefined> {
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (!BJJ_WEEKDAYS.includes(yesterday.getDay())) return undefined
+  const dateStr = toDateStr(yesterday)
+  const existing = await db.bjjSessions.where('date').equals(dateStr).count()
+  return existing === 0 ? dateStr : undefined
 }
 
 // ---------- Settings ----------
