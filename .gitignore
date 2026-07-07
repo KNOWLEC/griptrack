@@ -15,6 +15,7 @@ dist-ssr
 # Lambda packaging
 backend/package/
 backend/function.zip
+backend/.app-secret
 __pycache__/
 
 # Editor directories and files

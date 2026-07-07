@@ -13,11 +13,17 @@
 #     --role arn:aws:iam::<ACCOUNT_ID>:role/griptrack-coach-role `
 #     --environment "Variables={ANTHROPIC_API_KEY=<KEY>,APP_SHARED_SECRET=<SECRET>,MODEL_ID=claude-opus-4-8}"
 #
-#   # 3. Function URL, CORS locked to GitHub Pages
-#   aws lambda create-function-url-config --function-name griptrack-coach --auth-type NONE `
-#     --cors "AllowOrigins=https://knowlec.github.io,AllowMethods=POST,AllowHeaders=content-type,x-app-secret,MaxAge=86400"
-#   aws lambda add-permission --function-name griptrack-coach --action lambda:InvokeFunctionUrl `
-#     --principal "*" --function-url-auth-type NONE --statement-id url-public
+#   # 3. Public endpoint. NOTE: a plain Lambda Function URL (auth NONE) is blocked by the
+#   # DMI organization SCP (403 AccessDeniedException), so we front it with an API Gateway
+#   # HTTP API instead — same v2 event payload, still effectively free.
+#   aws apigatewayv2 create-api --name griptrack-coach --protocol-type HTTP `
+#     --target arn:aws:lambda:eu-west-1:<ACCOUNT_ID>:function:griptrack-coach `
+#     --cors-configuration "AllowOrigins=https://knowlec.github.io,AllowMethods=POST,AllowHeaders=content-type,x-app-secret,MaxAge=86400"
+#   aws lambda add-permission --function-name griptrack-coach --action lambda:InvokeFunction `
+#     --principal apigateway.amazonaws.com --statement-id apigw-invoke `
+#     --source-arn "arn:aws:execute-api:eu-west-1:<ACCOUNT_ID>:<API_ID>/*"
+#   # Caveat: HTTP API integration timeout is a hard 29s — if coach reviews start timing
+#   # out, switch the Lambda env var MODEL_ID to a faster model (e.g. claude-sonnet-5).
 #
 #   # 4. Cost ceiling: one concurrent invocation max
 #   aws lambda put-function-concurrency --function-name griptrack-coach --reserved-concurrent-executions 1
