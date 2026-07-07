@@ -1,0 +1,83 @@
+{
+  "program": {
+    "id": "bjj-slp-v1",
+    "name": "BJJ Strength & Physique",
+    "days": [
+      {
+        "id": "day-a-lower",
+        "name": "Day A — Lower Strength",
+        "exercises": [
+          { "id": "back-squat", "name": "Back Squat", "targetSets": 4, "repRangeMin": 4, "repRangeMax": 6, "targetRpe": 7, "targetWeightKg": 100 },
+          { "id": "romanian-deadlift", "name": "Romanian Deadlift", "targetSets": 3, "repRangeMin": 8, "repRangeMax": 10, "targetRpe": 7, "targetWeightKg": 80 }
+        ]
+      },
+      {
+        "id": "day-b-push",
+        "name": "Day B — Upper Push + Physique",
+        "exercises": [
+          { "id": "bench-press", "name": "Bench Press", "targetSets": 4, "repRangeMin": 5, "repRangeMax": 7, "targetRpe": 7, "targetWeightKg": 85 }
+        ]
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "date": "2026-06-15",
+      "dayId": "day-a-lower",
+      "dayName": "Day A — Lower Strength",
+      "bjjFatigue": 2,
+      "exercises": [
+        { "exerciseId": "back-squat", "exerciseName": "Back Squat", "sets": [
+          { "weightKg": 100, "reps": 6, "rpe": 7 },
+          { "weightKg": 100, "reps": 6, "rpe": 7 },
+          { "weightKg": 100, "reps": 6, "rpe": 7.5 },
+          { "weightKg": 100, "reps": 6, "rpe": 7 }
+        ] },
+        { "exerciseId": "romanian-deadlift", "exerciseName": "Romanian Deadlift", "sets": [
+          { "weightKg": 80, "reps": 10, "rpe": 7 },
+          { "weightKg": 80, "reps": 10, "rpe": 7 },
+          { "weightKg": 80, "reps": 9, "rpe": 7.5 }
+        ] }
+      ]
+    },
+    {
+      "date": "2026-06-16",
+      "dayId": "day-b-push",
+      "dayName": "Day B — Upper Push + Physique",
+      "bjjFatigue": 3,
+      "exercises": [
+        { "exerciseId": "bench-press", "exerciseName": "Bench Press", "sets": [
+          { "weightKg": 85, "reps": 7, "rpe": 7 },
+          { "weightKg": 85, "reps": 7, "rpe": 7.5 },
+          { "weightKg": 85, "reps": 6, "rpe": 8 },
+          { "weightKg": 85, "reps": 6, "rpe": 8 }
+        ] }
+      ]
+    },
+    {
+      "date": "2026-06-22",
+      "dayId": "day-a-lower",
+      "dayName": "Day A — Lower Strength",
+      "bjjFatigue": 4,
+      "sessionNotes": "Legs felt heavy after hard rounds Monday night",
+      "exercises": [
+        { "exerciseId": "back-squat", "exerciseName": "Back Squat", "sets": [
+          { "weightKg": 100, "reps": 5, "rpe": 8 },
+          { "weightKg": 100, "reps": 5, "rpe": 8.5 },
+          { "weightKg": 100, "reps": 4, "rpe": 9 },
+          { "weightKg": 100, "reps": 4, "rpe": 9 }
+        ] },
+        { "exerciseId": "romanian-deadlift", "exerciseName": "Romanian Deadlift", "sets": [
+          { "weightKg": 80, "reps": 8, "rpe": 8 },
+          { "weightKg": 80, "reps": 8, "rpe": 8.5 }
+        ] }
+      ]
+    }
+  ],
+  "context": {
+    "goal": "BJJ performance (grip, hips, posterior chain, conditioning) + physique",
+    "bjjSchedule": "BJJ Mon/Tue/Wed evenings, sometimes Fri or Sat",
+    "liftingSchedule": "Lifts at lunchtime BEFORE evening BJJ on the same days, 3-4x/week",
+    "units": "kg"
+  }
+}
